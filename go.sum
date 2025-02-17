@@ -1,0 +1,4 @@
+github.com/0persianman/x-go-binding v0.0.0-20210912132432-c631f819040d h1:fpwpzYbeGQ4ws1SmD1byd/fsHETL2EKxRn319+UQ7uY=
+github.com/0persianman/x-go-binding v0.0.0-20210912132432-c631f819040d/go.mod h1:wtL90bpRCTV3IYDaMDowv71u5L47O0DWEo/75hrPxSY=
+github.com/jezek/xgb v1.1.1 h1:bE/r8ZZtSv7l9gk6nU0mYx51aXrvnyb44892TwSaqS4=
+github.com/jezek/xgb v1.1.1/go.mod h1:nrhwO0FX/enq75I7Y7G8iN1ubpSGZEiA3v9e9GyRFlk=

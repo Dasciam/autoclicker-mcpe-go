@@ -1,27 +1,34 @@
 package main
 
-// #cgo LDFLAGS: -lX11
-import "C"
-
 import (
-	"github.com/dasciam/autoclicker-mcpe-go/x"
+	"github.com/dasciam/autoclicker-mcpe-go/interfaces"
+	"github.com/dasciam/autoclicker-mcpe-go/platform"
+	"runtime"
 	"time"
 )
 
 func main() {
-	display := x.Open()
+	display, err := interfaces.Open()
+	if err != nil {
+		panic(err)
+	}
 
 	for {
-		info := display.QueryPointer()
-		wnd, _ := display.InputFocus()
-		title := wnd.Title(display)
+		pointer, err := display.Pointer()
+		if err != nil {
+			panic(err)
+		}
+		window, err := display.WindowFocus()
+		if err != nil {
+			panic(err)
+		}
+		title := window.Title()
 
-		if title == "Minecraft" && info.Mask&(1<<8) > 0 {
-			attr := wnd.Attributes(display)
-
-			wWidth := attr.Width / 2
-			if wWidth+5 > info.RootX && wWidth-5 < info.RootX {
-				display.SendMouseEvent(wnd)
+		if title != "Minecraft" && pointer.LoadMask(platform.FlagLMB) {
+			width, _ := window.Size()
+			wWidth := width / 2
+			if runtime.GOOS == "windows" || wWidth+5 > pointer.X && wWidth-5 < pointer.X {
+				_ = window.EmulateMouseClick()
 			}
 		}
 		time.Sleep(time.Millisecond * 50)

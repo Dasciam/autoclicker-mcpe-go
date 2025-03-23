@@ -24,7 +24,7 @@ func main() {
 		}
 		title := window.Title()
 
-		if title != "Minecraft" && pointer.LoadMask(platform.FlagLMB) {
+		if title == "Minecraft" && pointer.LoadMask(platform.FlagLMB) {
 			width, _ := window.Size()
 			wWidth := width / 2
 			if runtime.GOOS == "windows" || wWidth+5 > pointer.X && wWidth-5 < pointer.X {

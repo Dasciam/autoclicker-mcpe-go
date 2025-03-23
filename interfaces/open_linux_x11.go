@@ -1,12 +1,14 @@
 //go:build linux
 
-// Package interfaces #cgo LDFLAGS: -lX11
 package interfaces
 
 import (
 	"github.com/dasciam/autoclicker-mcpe-go/interfaces/x"
 	"github.com/dasciam/autoclicker-mcpe-go/platform"
 )
+
+//#cgo LDFLAGS: -lX11
+import "C"
 
 type x11window struct {
 	display *x.Display
@@ -38,10 +40,17 @@ func (x x11display) WindowFocus() (platform.Window, error) {
 
 func (x x11display) Pointer() (platform.Pointer, error) {
 	ptr := x.display.QueryPointer()
+
+	var flags uint32
+
+	if ptr.Mask&(1<<8) != 0 {
+		flags |= platform.FlagLMB
+	}
+
 	return platform.Pointer{
 		X:    ptr.X,
 		Y:    ptr.Y,
-		Mask: ptr.Mask,
+		Mask: flags,
 	}, nil
 }
 

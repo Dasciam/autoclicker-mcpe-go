@@ -1,14 +1,7 @@
 package platform
 
 const (
-	_ = 1 << iota
-	_
-	_
-	_
-	_
-	_
-	_
-	FlagLMB
+	FlagLMB = 1 << iota
 )
 
 // Pointer is the state of the mouse pointer.

@@ -24,8 +24,10 @@ func (w winWindow) Size() (width, height int32) {
 }
 
 func (w winWindow) EmulateMouseClick() error {
-	w.handle.EmulateMouseClick()
-	return nil
+	if err := w.handle.EmulateMouseDown(); err != nil {
+		return err
+	}
+	return w.handle.EmulateMouseUP()
 }
 
 type winDisplay struct {

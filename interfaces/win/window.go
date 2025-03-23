@@ -29,7 +29,7 @@ func (w WindowHandle) Size() (int32, int32) {
 	return int32(width), int32(height)
 }
 
-func (w WindowHandle) EmulateMouseClick() {
+func (w WindowHandle) EmulateMouseDown() error {
 	_, _, _ = procMouseEvent.Call(
 		uintptr(0x0002),
 		uintptr(0),
@@ -37,6 +37,10 @@ func (w WindowHandle) EmulateMouseClick() {
 		uintptr(0),
 		uintptr(0),
 	)
+	return nil
+}
+
+func (w WindowHandle) EmulateMouseUP() error {
 	_, _, _ = procMouseEvent.Call(
 		uintptr(0x0004),
 		uintptr(0),
@@ -44,6 +48,7 @@ func (w WindowHandle) EmulateMouseClick() {
 		uintptr(0),
 		uintptr(0),
 	)
+	return nil
 }
 
 func ForegroundWindow() WindowHandle {

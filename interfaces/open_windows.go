@@ -23,11 +23,13 @@ func (w winWindow) Size() (width, height int32) {
 	return w.handle.Size()
 }
 
-func (w winWindow) EmulateMouseClick() error {
-	if err := w.handle.EmulateMouseDown(); err != nil {
-		return err
+func (w winWindow) EmulateMouseClick() (err error) {
+	err = w.handle.EmulateMouseUP()
+	if err != nil {
+		return
 	}
-	return w.handle.EmulateMouseUP()
+	err = w.handle.EmulateMouseDown()
+	return
 }
 
 type winDisplay struct {
@@ -112,13 +114,8 @@ func (d *winDisplay) startTicking() {
 		case ev := <-events:
 			switch ev.Message {
 			case 0x0201: // WM_LBUTTONDOWN
-				if !d.leftMouseButton.CompareAndSwap(false, true) {
-					d.lmbGuard.Store(true)
-				}
+				d.leftMouseButton.Store(true)
 			case 0x0202: // WM_LBUTTONUP
-				if d.lmbGuard.CompareAndSwap(true, false) {
-					continue
-				}
 				d.leftMouseButton.Store(false)
 			}
 			d.point.Store(&ev.POINT)

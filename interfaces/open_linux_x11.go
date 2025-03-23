@@ -54,6 +54,10 @@ func (x x11display) Pointer() (platform.Pointer, error) {
 	}, nil
 }
 
+func (x x11display) Close() error {
+	return x.display.Close()
+}
+
 func Open() (platform.Display, error) {
 	return x11display{
 		display: x.Open(),

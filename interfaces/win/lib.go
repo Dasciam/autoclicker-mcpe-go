@@ -19,5 +19,6 @@ var (
 	procGetWindowTextW      = user32.NewProc("GetWindowTextW")
 	procGetSystemMetrics    = user32.NewProc("GetSystemMetrics")
 
-	procMouseEvent = user32.NewProc("mouse_event")
+	procMouseEvent    = user32.NewProc("mouse_event")
+	procGetCursorInfo = user32.NewProc("GetCursorInfo")
 )

@@ -2,22 +2,13 @@
 
 package interfaces
 
-//#include <stdio.h>
-//#include <stdlib.h>
-//extern int CallNextHookEx(void*, int, void*, void*);
-//int __process_mouse_hook(int code, void* w, void* l) {
-//  exit(0);
-//	return CallNextHookEx(0, code, w, l);
-//}
-import "C"
-
 import (
 	"github.com/dasciam/autoclicker-mcpe-go/interfaces/win"
 	"github.com/dasciam/autoclicker-mcpe-go/platform"
 	"github.com/moutend/go-hook/pkg/mouse"
 	"github.com/moutend/go-hook/pkg/types"
-	"log"
 	"sync/atomic"
+	"time"
 )
 
 type winWindow struct {
@@ -38,10 +29,12 @@ func (w winWindow) EmulateMouseClick() error {
 }
 
 type winDisplay struct {
-	lastMouseEvent atomic.Pointer[types.MouseEvent]
+	point atomic.Pointer[types.POINT]
 
-	rmbPressed atomic.Bool
-	guard      atomic.Bool
+	leftMouseButton atomic.Bool
+	lmbGuard        atomic.Bool
+
+	pointerHidden atomic.Bool
 
 	close chan struct{}
 }
@@ -53,21 +46,26 @@ func (*winDisplay) WindowFocus() (platform.Window, error) {
 }
 
 func (d *winDisplay) Pointer() (platform.Pointer, error) {
-	var point types.POINT
+	var x, y int32
 
-	if ev := d.lastMouseEvent.Load(); ev != nil {
-		point = ev.POINT
+	if point := d.point.Load(); point != nil {
+		x, y = point.X, point.Y
 	}
 
 	var flags uint32
 
-	if d.rmbPressed.Load() {
-		flags |= platform.FlagLMB
+	// We only set flags if the
+	// mouse control is grabbed
+	// by the game (hidden).
+	if d.pointerHidden.Load() {
+		if d.leftMouseButton.Load() {
+			flags |= platform.FlagLMB
+		}
 	}
 
 	return platform.Pointer{
-		X:    point.X,
-		Y:    point.Y,
+		X:    x,
+		Y:    y,
 		Mask: flags,
 	}, nil
 }
@@ -88,37 +86,40 @@ func Open() (platform.Display, error) {
 func (d *winDisplay) startTicking() {
 	events := make(chan types.MouseEvent)
 
-	if err := mouse.Install(func(c chan<- types.MouseEvent) types.HOOKPROC {
-		return func(_ int32, wParam, _ uintptr) uintptr {
-			switch wParam {
-			case 0x0201: // WM_LBUTTONDOWN
-				if !d.rmbPressed.CompareAndSwap(false, true) {
-					d.guard.Store(true)
-				}
-				log.Println("Button is pressed")
-			case 0x0202: // WM_LBUTTONUP
-				if d.guard.CompareAndSwap(true, false) {
-					return 0
-				}
-				d.rmbPressed.Store(false)
-				log.Println("Button up")
-			}
-			return 0
-		}
-	}, events); err != nil {
+	if err := mouse.Install(nil, events); err != nil {
 		panic(err)
 		return
 	}
 
+	ticker := time.NewTicker(time.Millisecond)
+
 	defer func() {
 		_ = mouse.Uninstall()
 		close(events)
+		ticker.Stop()
 	}()
 
 	for {
 		select {
+		case <-ticker.C:
+			cursor, err := win.CursorInfo()
+			if err != nil {
+				panic(err)
+			}
+			d.pointerHidden.Store(cursor.Flags == 0)
 		case ev := <-events:
-			d.lastMouseEvent.Store(&ev)
+			switch ev.Message {
+			case 0x0201: // WM_LBUTTONDOWN
+				if !d.leftMouseButton.CompareAndSwap(false, true) {
+					d.lmbGuard.Store(true)
+				}
+			case 0x0202: // WM_LBUTTONUP
+				if d.lmbGuard.CompareAndSwap(true, false) {
+					continue
+				}
+				d.leftMouseButton.Store(false)
+			}
+			d.point.Store(&ev.POINT)
 		case <-d.close:
 			return
 		}

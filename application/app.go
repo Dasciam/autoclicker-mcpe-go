@@ -58,7 +58,7 @@ func New() (*App, error) {
 
 	minecraft := "Minecraft"
 	a.matchInput.Store(&minecraft)
-	a.matchIndex.Store(0)
+	a.matchIndex.Store(2)
 
 	a.updateMatchSettings()
 	return a, nil
@@ -257,7 +257,7 @@ func (a *App) deployWindow() fyne.Window {
 						a.updateMatchSettings()
 					}
 
-					v.SetSelectedIndex(2)
+					v.SetSelectedIndex(int(a.matchIndex.Load()))
 					return v
 				}),
 			),

@@ -8,7 +8,20 @@ import (
 )
 
 //#cgo LDFLAGS: -lX11
+//extern void* XSetErrorHandler(void*);
+//
+//int _xErrorHandler(void*, void*) {
+//  return 0;
+//}
+//
+//void _doNothingOnXError() {
+//  XSetErrorHandler(_xErrorHandler);
+//}
 import "C"
+
+func init() {
+	C._doNothingOnXError()
+}
 
 type x11window struct {
 	display *x.Display

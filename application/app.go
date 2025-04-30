@@ -8,6 +8,7 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"github.com/dasciam/autoclicker-mcpe-go/interfaces"
 	"github.com/dasciam/autoclicker-mcpe-go/platform"
@@ -190,6 +191,8 @@ func (a *App) doWindowAppCycle() {
 
 func (a *App) deployWindow() fyne.Window {
 	fApp := app.New()
+
+	fApp.Settings().SetTheme(theme.DarkTheme())
 
 	w := fApp.NewWindow("Auto-Clicker")
 

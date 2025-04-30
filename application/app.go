@@ -230,6 +230,7 @@ func (a *App) deployWindow() fyne.Window {
 	addGenericUpdateCallback(a, matcherErrorText, func(object *canvas.Text) {
 		text := a.matcherError.Load()
 		if text == nil {
+			object.Text = ""
 			return
 		}
 		object.Text = fmt.Sprint("Error: ", *text)

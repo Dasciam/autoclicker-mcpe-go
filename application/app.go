@@ -31,6 +31,9 @@ type updateCallback struct {
 type App struct {
 	min, max atomic.Int32
 
+	clicking atomic.Bool
+	hitTime  atomic.Int32
+
 	matcher atomic.Pointer[WindowMatcher]
 
 	matchInput atomic.Pointer[string]
@@ -56,6 +59,7 @@ func New() (*App, error) {
 
 	a.min.Store(12)
 	a.max.Store(16)
+	a.hitTime.Store(10)
 
 	minecraft := "Minecraft"
 	a.matchInput.Store(&minecraft)
@@ -104,6 +108,9 @@ func (a *App) doMainAppCycle() error {
 
 	defer appTicker.Stop()
 
+	var clicking = false
+	var hitTimeChan chan struct{}
+
 	for {
 		select {
 		case <-a.iteration:
@@ -122,7 +129,18 @@ func (a *App) doMainAppCycle() error {
 				return errors.New("no matcher set")
 			}
 
-			if (*matcher).Match(title) && pointer.LoadMask(platform.FlagLMB) {
+			before := clicking
+			clicking = pointer.LoadMask(platform.FlagLMB)
+			if before != clicking {
+				if clicking {
+					hitTimeChan = make(chan struct{})
+					go a.doAdditionalTimedHits(hitTimeChan)
+				} else {
+					close(hitTimeChan)
+				}
+			}
+
+			if (*matcher).Match(title) && clicking {
 				width, _ := window.Size()
 				wWidth := width / 2
 				if runtime.GOOS == "windows" || wWidth+5 > pointer.X && wWidth-5 < pointer.X {
@@ -150,6 +168,20 @@ func (a *App) catchSignal() {
 	<-signal
 
 	_ = a.Close()
+}
+
+func (a *App) doAdditionalTimedHits(close <-chan struct{}) {
+	for {
+		select {
+		case <-close:
+			return
+		case <-a.close:
+			return
+		default:
+			a.iteration <- time.Now()
+			time.Sleep(time.Duration(a.hitTime.Load()) * time.Second / 20)
+		}
+	}
 }
 
 func (a *App) setupClicker() {
@@ -216,6 +248,12 @@ func (a *App) deployWindow() fyne.Window {
 		a.min.Store(s)
 	}
 
+	hitTimeSlider := widget.NewSlider(1, 20)
+	hitTimeSlider.Value = float64(a.hitTime.Load())
+	hitTimeSlider.OnChanged = func(f float64) {
+		a.hitTime.Store(int32(f))
+	}
+
 	minText := canvas.NewText("", color.White)
 	addGenericUpdateCallback(a, minText, func(object *canvas.Text) {
 		object.Text = fmt.Sprintf("Min CPS: %d", a.min.Load())
@@ -236,6 +274,11 @@ func (a *App) deployWindow() fyne.Window {
 		object.Text = fmt.Sprint("Error: ", *text)
 	})
 
+	hitTimeText := canvas.NewText("", color.White)
+	addGenericUpdateCallback(a, hitTimeText, func(object *canvas.Text) {
+		object.Text = fmt.Sprintf("Hit time: %d ticks", a.hitTime.Load())
+	})
+
 	content := container.NewBorder(
 		container.New(layout.NewVBoxLayout(),
 			// Target minimum CPS.
@@ -244,6 +287,9 @@ func (a *App) deployWindow() fyne.Window {
 			// Target maximum CPS.
 			maxText,
 			maxSlider,
+			// Hit time.
+			hitTimeText,
+			hitTimeSlider,
 			container.New(layout.NewHBoxLayout(),
 				canvas.NewText("Window checking: ", color.White),
 				canvasObject(func() fyne.CanvasObject {
